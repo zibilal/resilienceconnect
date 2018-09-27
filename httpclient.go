@@ -3,7 +3,6 @@ package resilienceconnect
 
 import (
 	"encoding/json"
-	"errors"
 	"io/ioutil"
 	"net/http"
 	"time"
@@ -35,12 +34,6 @@ func (h *HttpClient) ConnectWith(request Requestor, output interface{}) error {
 	response, err := h.httpClient.Do(jreq.HttpRequest)
 	if err != nil {
 		return err
-	}
-	if response == nil {
-		return errors.New("unable to get http response")
-	}
-	if response.Body == nil {
-		return errors.New("return an empty response body")
 	}
 	err = json.NewDecoder(response.Body).Decode(output)
 	if err != nil {

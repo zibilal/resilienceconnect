@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-func TestHttpClient_ConnectTo(t *testing.T) {
+func TestHttpClient_ConnectWith(t *testing.T) {
 	t.Log("Testing ConnectWith")
 	{
 		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -75,5 +75,25 @@ func TestHttpClient_ConnectTo(t *testing.T) {
 			t.Logf("%s expected timeout not far from 3 seconds, got %d seconds", success, idata)
 		}
 
+	}
+
+	t.Log("Testing ConnectWith, with nil http request")
+	{
+		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+		}))
+		defer ts.Close()
+
+		jsonReq := NewJsonRequestWrapper()
+		hclient := NewHttpClient(3)
+		data := struct {
+			Name  string `json:"full_name"`
+			Email string `json:"email"`
+		}{}
+		jsonReq.BodyRequest(http.MethodGet, ts.URL, nil)
+		err := hclient.ConnectWith(jsonReq, &data)
+		if err != nil {
+			t.Logf("%s expected error not nil, err: %s", success, err.Error())
+		}
 	}
 }

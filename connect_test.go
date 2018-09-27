@@ -15,10 +15,10 @@ func TestConnectorOption(t *testing.T) {
 
 		expected := "map[app:testing1 version:v0.0.1 equal:data_equal]"
 
-		if fmt.Sprintf("%v", cOptions) == expected {
+		if fmt.Sprintf("%+v", cOptions) == expected {
 			t.Logf("%s expected optinos %s", success, expected)
 		} else {
-			t.Fatalf("%s expected options %s, got %v", failed, expected, cOptions)
+			t.Fatalf("%s expected options %s, got %+v", failed, expected, cOptions)
 		}
 	}
 }
