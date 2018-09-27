@@ -34,7 +34,7 @@ func TestHttpClient_ConnectWith(t *testing.T) {
 			Email string `json:"email"`
 		}{}
 		jsonReq.BodyRequest(http.MethodGet, ts.URL, nil)
-		hclient := NewHttpClient(4)
+		hclient := NewJsonapiClient(4)
 		err := hclient.ConnectWith(jsonReq, &data)
 
 		if err != nil {
@@ -57,7 +57,7 @@ func TestHttpClient_ConnectWith(t *testing.T) {
 			Email string `json:"email"`
 		}{}
 		jsonReq.BodyRequest(http.MethodGet, "http://www.foodboook.com/", nil)
-		hclient := NewHttpClient(3)
+		hclient := NewJsonapiClient(3)
 		now := time.Now()
 		err := hclient.ConnectWith(jsonReq, &data)
 		idata := time.Since(now)
@@ -85,7 +85,7 @@ func TestHttpClient_ConnectWith(t *testing.T) {
 		defer ts.Close()
 
 		jsonReq := NewJsonRequestWrapper()
-		hclient := NewHttpClient(3)
+		hclient := NewJsonapiClient(3)
 		data := struct {
 			Name  string `json:"full_name"`
 			Email string `json:"email"`
