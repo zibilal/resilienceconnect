@@ -1,7 +1,7 @@
 package resilienceconnect
 
 type Connector interface {
-	Connect(resource string, options ConnectorOption, input interface{}, output interface{}) error
+	Connect(url string, request Requestor, options ConnectorOption, output interface{}) error
 }
 
 type Requestor interface {
