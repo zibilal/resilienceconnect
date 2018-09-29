@@ -9,7 +9,6 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"reflect"
 )
 
 // A JsonRequestWrapper represents an HTTP request which data
@@ -61,11 +60,6 @@ func (w *JsonRequestWrapper) BodyRequest(method, resource string, input interfac
 
 	var body io.Reader
 	if input != nil {
-		iValue := reflect.Indirect(reflect.ValueOf(input))
-		if iValue.Kind() != reflect.Struct {
-			w.isSet = false
-			return w
-		}
 		b, err := json.Marshal(input)
 		if err != nil {
 			w.isSet = false
