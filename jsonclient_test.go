@@ -19,8 +19,7 @@ func TestHttpClient_ConnectWith(t *testing.T) {
 			}{
 				"Test Name", "test@example.com",
 			}
-			w.Header().Add("Content-Type", "application/json")
-			w.WriteHeader(200)
+			w.Header().Set("Content-Type", "application/json")
 			b, _ := json.Marshal(data)
 			w.Write(b)
 		}))
@@ -33,7 +32,7 @@ func TestHttpClient_ConnectWith(t *testing.T) {
 			Name  string `json:"full_name"`
 			Email string `json:"email"`
 		}{}
-		jsonReq.BodyRequest(http.MethodGet, ts.URL, nil)
+		jsonReq.BodyRequest(http.MethodGet, ts.URL, nil).AddHeader("Content-Type", "application/json")
 		hclient := NewJsonapiClient(4)
 		err := hclient.ConnectWith(jsonReq, &data)
 
@@ -56,7 +55,7 @@ func TestHttpClient_ConnectWith(t *testing.T) {
 			Name  string `json:"full_name"`
 			Email string `json:"email"`
 		}{}
-		jsonReq.BodyRequest(http.MethodGet, "http://www.foodboook.com/", nil)
+		jsonReq.BodyRequest(http.MethodGet, "http://www.foodboook.com/", nil).AddHeader("Content-Type", "application/json")
 		hclient := NewJsonapiClient(3)
 		now := time.Now()
 		err := hclient.ConnectWith(jsonReq, &data)
@@ -85,15 +84,48 @@ func TestHttpClient_ConnectWith(t *testing.T) {
 		defer ts.Close()
 
 		jsonReq := NewJsonRequestWrapper()
-		hclient := NewJsonapiClient(3)
+		hclient := NewJsonapiClient(2)
 		data := struct {
 			Name  string `json:"full_name"`
 			Email string `json:"email"`
 		}{}
-		jsonReq.BodyRequest(http.MethodGet, ts.URL, nil)
+		jsonReq.BodyRequest(http.MethodGet, ts.URL, nil).AddHeader("Content-Type", "application/json")
 		err := hclient.ConnectWith(jsonReq, &data)
 		if err != nil {
 			t.Logf("%s expected error not nil, err: %s", success, err.Error())
+		}
+	}
+
+	t.Log("Testing ConnectWith with empty server")
+	{
+		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			data := struct {
+				Name  string `json:"full_name"`
+				Email string `json:"email"`
+			}{"Example Name", "email@example.com"}
+			json.NewEncoder(w).Encode(data)
+		}))
+
+		defer ts.Close()
+
+		jsonReq := NewJsonRequestWrapper()
+
+		data := struct {
+			Name  string `json:"full_name"`
+			Email string `json:"email"`
+		}{}
+		jsonReq.BodyRequest(http.MethodGet, ts.URL, nil).AddHeader("Content-Type", "application/json")
+		hclient := NewJsonapiClient(2)
+		err := hclient.ConnectWith(jsonReq, &data)
+
+		if err != nil {
+			t.Fatalf("%s expected error nil, got %s", failed, err.Error())
+		}
+
+		if sqltyping.IsEmpty(data) {
+			t.Fatalf("%s expected data is not empty", failed)
+		} else {
+			t.Logf("%s value %+v", success, data)
 		}
 	}
 }

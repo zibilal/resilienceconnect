@@ -3,9 +3,15 @@ package resilienceconnect
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
+	"strings"
 	"time"
+)
+
+const (
+	acceptedContentTypes = "application/json | application/vnd.api+json"
 )
 
 // JsonapiClient wrap the functionality to connect to http server
@@ -27,10 +33,18 @@ func NewJsonapiClient(timeout int) *JsonapiClient {
 // ConnectWith connect to an external resource specified in url argument
 // url is the external resource path
 // request specify the request body and header specific to the external resource contract api
-// ConnectWith assumes the external resource is an restful service
+// ConnectWith assumes the external resource is a restful service
 func (h *JsonapiClient) ConnectWith(request Requestor, output interface{}) error {
 	jreq := NewJsonRequestWrapper()
 	request.Request(jreq)
+	contentType := jreq.HttpRequest.Header.Get("Content-Type")
+	if contentType == "" {
+		return fmt.Errorf("header \"Content-Type\" is required, accepts(%s)", acceptedContentTypes)
+	}
+	if !h.validContentType(contentType) {
+		return fmt.Errorf("invalid content type (%s) accepts(%s)", contentType, acceptedContentTypes)
+	}
+
 	response, err := h.httpClient.Do(jreq.HttpRequest)
 	if err != nil {
 		return err
@@ -39,7 +53,7 @@ func (h *JsonapiClient) ConnectWith(request Requestor, output interface{}) error
 	if err != nil {
 		defer response.Body.Close()
 		b, _ := ioutil.ReadAll(response.Body)
-		if len(b) == 0 {
+		if len(b) > 0 {
 			str := string(b)
 			herr := NewHttpError()
 			herr.Set(str)
@@ -50,6 +64,16 @@ func (h *JsonapiClient) ConnectWith(request Requestor, output interface{}) error
 	}
 
 	return nil
+}
+
+func (h *JsonapiClient) validContentType(contentType string) bool {
+	split := strings.Split(acceptedContentTypes, " | ")
+	for _, s := range split {
+		if contentType == s {
+			return true
+		}
+	}
+	return false
 }
 
 // This type can be use for wrapper html error, because external system is being load balanced with
