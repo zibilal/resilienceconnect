@@ -36,7 +36,7 @@ func TestHttpConnect_Connect_Retry(t *testing.T) {
 			Status string `json:"status"`
 		}{}
 
-		err := connector.Connect("http://example.com", jsonRequest, jOptions, &response)
+		err := connector.Connect(jsonRequest, jOptions, &response)
 		if err != nil {
 			t.Logf("%s expected error not nil", success)
 		} else {
@@ -86,7 +86,7 @@ func TestHttpConnect_Connect_Backoff(t *testing.T) {
 			Status string `json:"status"`
 		}{}
 
-		err := connector.Connect("http://example.com", jsonRequest, jOptions, &response)
+		err := connector.Connect(jsonRequest, jOptions, &response)
 		if err != nil {
 			t.Fatalf("%s expected error not nil, got %s", failed, err.Error())
 		}

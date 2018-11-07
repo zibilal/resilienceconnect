@@ -30,10 +30,9 @@ func NewResilienceConnector() *ResilienceConnect {
 	return new(ResilienceConnect)
 }
 
-// Connect is method that connect with external resource defined in url
-// url contain the valid path to the external resource
+// Connect is method that connect with external resource defined connector option
 // request is a Requestor object
-func (h *ResilienceConnect) Connect(url string, request Requestor, options ConnectorOption, output interface{}) error {
+func (h *ResilienceConnect) Connect(request Requestor, options ConnectorOption, output interface{}) error {
 	var (
 		isBackoff   bool
 		isRetry     bool
@@ -61,7 +60,7 @@ func (h *ResilienceConnect) Connect(url string, request Requestor, options Conne
 		}
 
 		errChannel := make(chan error)
-		go func(url string, request Requestor, output interface{}, errChannel chan<- error) {
+		go func(request Requestor, output interface{}, errChannel chan<- error) {
 			var err error
 			for i := 0; ((i < retry) && isRetry) || isBackoff; i++ {
 				err = connectFunc(request, output)
@@ -75,7 +74,7 @@ func (h *ResilienceConnect) Connect(url string, request Requestor, options Conne
 				}
 			}
 			errChannel <- err
-		}(url, request, output, errChannel)
+		}(request, output, errChannel)
 
 		select {
 		case err := <-errChannel:
