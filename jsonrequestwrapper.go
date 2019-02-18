@@ -9,6 +9,8 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+
+	"github.com/moul/http2curl"
 )
 
 // A JsonRequestWrapper represents an HTTP request which data
@@ -97,4 +99,18 @@ func (w *JsonRequestWrapper) Request(dataRequest interface{}) error {
 	jsonRequest.isSet = w.isSet
 
 	return nil
+}
+
+// Get request as string representing the runnable 'curl' command
+// version of the request
+func (w *JsonRequestWrapper) AsCurlCommand() (string, error) {
+	if w.HttpRequest == nil {
+		return "", errors.New("invalid state, http request still empty")
+	}
+	cmd, err := http2curl.GetCurlCommand(w.HttpRequest)
+	if err != nil {
+		return "", err
+	}
+
+	return cmd.String(), nil
 }
