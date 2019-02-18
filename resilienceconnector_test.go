@@ -36,7 +36,7 @@ func TestHttpConnect_Connect_Retry(t *testing.T) {
 			Status string `json:"status"`
 		}{}
 
-		err := connector.Connect(jsonRequest, jOptions, &response)
+		_, err := connector.Connect(jsonRequest, jOptions, &response)
 		if err != nil {
 			t.Logf("%s expected error not nil", success)
 		} else {
@@ -52,12 +52,12 @@ func TestHttpConnect_Connect_Retry(t *testing.T) {
 	}
 }
 
-func ConnectResource1(request Requestor, output interface{}) error {
+func ConnectResource1(request Requestor, output interface{}) (Responder, error) {
 
 	fmt.Println("Connect resources, called", countCall)
 	countCall++
 
-	return errors.New("testing error")
+	return nil, errors.New("testing error")
 }
 
 func TestHttpConnect_Connect_Backoff(t *testing.T) {
@@ -86,27 +86,42 @@ func TestHttpConnect_Connect_Backoff(t *testing.T) {
 			Status string `json:"status"`
 		}{}
 
-		err := connector.Connect(jsonRequest, jOptions, &response)
+		rsp, err := connector.Connect(jsonRequest, jOptions, &response)
 		if err != nil {
 			t.Fatalf("%s expected error not nil, got %s", failed, err.Error())
 		}
 		if countCall == 4{
 			t.Logf("%s expected function is called 4 times", success)
+			t.Log("Response: ", rsp.StatusCode(), rsp.StatusMessage())
 		} else {
 			t.Fatalf("%s expected function is called 4 times, actually called %d times", failed, countCall)
 		}
 
-		t.Log("Count call", countCall)
+		t.Log("Count call")
 	}
 }
 
-func ConnectResource2( request Requestor, output interface{}) error {
+func ConnectResource2( request Requestor, output interface{}) (Responder, error) {
 
 	fmt.Println("Connect resources, called", countCall)
 	countCall++
 	if countCall < 4{
-		return errors.New("testing error")
+		return nil, errors.New("testing error")
 	} else {
-		return nil
+		resp := new(TestResponder)
+		return resp, nil
 	}
+}
+
+type TestResponder struct {
+	code int
+	message string
+}
+
+func (t *TestResponder) StatusCode() int {
+	return 200
+}
+
+func (t *TestResponder) StatusMessage() string {
+	return "OK"
 }

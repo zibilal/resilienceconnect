@@ -32,7 +32,7 @@ func NewResilienceConnector() *ResilienceConnect {
 
 // Connect is method that connect with external resource defined connector option
 // request is a Requestor object
-func (h *ResilienceConnect) Connect(request Requestor, options ConnectorOption, output interface{}) error {
+func (h *ResilienceConnect) Connect(request Requestor, options ConnectorOption, output interface{}) (Responder, error) {
 	var (
 		isBackoff   bool
 		isRetry     bool
@@ -48,7 +48,7 @@ func (h *ResilienceConnect) Connect(request Requestor, options ConnectorOption, 
 	connectFunc, _ = options.Get(ConnectorFunc).(ConnectionFunc)
 
 	if connectFunc == nil {
-		return errors.New(ConnectorFunc + " is required")
+		return nil, errors.New(ConnectorFunc + " is required")
 	}
 
 	if isBackoff || isRetry {
@@ -60,10 +60,12 @@ func (h *ResilienceConnect) Connect(request Requestor, options ConnectorOption, 
 		}
 
 		errChannel := make(chan error)
+		respondCh := make(chan Responder)
 		go func(request Requestor, output interface{}, errChannel chan<- error) {
 			var err error
+			var resp Responder
 			for i := 0; ((i < retry) && isRetry) || isBackoff; i++ {
-				err = connectFunc(request, output)
+				resp, err = connectFunc(request, output)
 				if err != nil {
 					time.Sleep(time.Duration(wait) * time.Second)
 					if isBackoff {
@@ -73,23 +75,31 @@ func (h *ResilienceConnect) Connect(request Requestor, options ConnectorOption, 
 					break
 				}
 			}
-			errChannel <- err
+			if err != nil {
+				errChannel <- err
+			}
+			if resp != nil {
+				respondCh <- resp
+			}
 		}(request, output, errChannel)
 
 		select {
 		case err := <-errChannel:
 			if err != nil {
-				return err
+				return nil, err
 			}
 			close(errChannel)
+		case resp := <- respondCh:
+			if resp != nil {
+				return resp, nil
+			}
+			close(respondCh)
 		}
 
-		return nil
+		return nil, nil
 	} else {
 		return connectFunc(request, output)
 	}
-
-	return nil
 }
 
 // backingOff counting the backing off value on wait parameter

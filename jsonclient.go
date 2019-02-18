@@ -34,36 +34,43 @@ func NewJsonapiClient(timeout int) *JsonapiClient {
 // url is the external resource path
 // request specify the request body and header specific to the external resource contract api
 // ConnectWith assumes the external resource is a restful service
-func (h *JsonapiClient) ConnectWith(request Requestor, output interface{}) error {
+func (h *JsonapiClient) ConnectWith(request Requestor, output interface{}) (Responder, error) {
 	jreq := NewJsonRequestWrapper()
-	request.Request(jreq)
+	_ = request.Request(jreq)
 	contentType := jreq.HttpRequest.Header.Get("Content-Type")
 	if contentType == "" {
-		return fmt.Errorf("header \"Content-Type\" is required, accepts(%s)", acceptedContentTypes)
+		return nil, fmt.Errorf("header \"Content-Type\" is required, accepts(%s)", acceptedContentTypes)
 	}
 	if !h.validContentType(contentType) {
-		return fmt.Errorf("invalid content type (%s) accepts(%s)", contentType, acceptedContentTypes)
+		return nil, fmt.Errorf("invalid content type (%s) accepts(%s)", contentType, acceptedContentTypes)
 	}
 
 	response, err := h.httpClient.Do(jreq.HttpRequest)
 	if err != nil {
-		return err
+		return nil, err
 	}
+	defer func() {
+		_ = response.Body.Close()
+	}()
+
 	err = json.NewDecoder(response.Body).Decode(output)
 	if err != nil {
-		defer response.Body.Close()
 		b, _ := ioutil.ReadAll(response.Body)
 		if len(b) > 0 {
 			str := string(b)
 			herr := NewHttpError()
 			herr.Set(str)
 
-			return herr
+			return nil, herr
 		}
-		return err
+		return nil, err
 	}
 
-	return nil
+	jsonResponder := NewJsonApiClientResponder()
+	jsonResponder.setHttpStatus(response.StatusCode)
+	jsonResponder.setHttpMessage(response.Status)
+
+	return jsonResponder, nil
 }
 
 func (h *JsonapiClient) validContentType(contentType string) bool {
@@ -74,6 +81,31 @@ func (h *JsonapiClient) validContentType(contentType string) bool {
 		}
 	}
 	return false
+}
+
+type JsonApiClientResponder struct {
+	httpStatus  int
+	httpMessage string
+}
+
+func NewJsonApiClientResponder() *JsonApiClientResponder {
+	return new(JsonApiClientResponder)
+}
+
+func (c *JsonApiClientResponder) setHttpStatus(status int) {
+	c.httpStatus = status
+}
+
+func (c *JsonApiClientResponder) StatusCode() int {
+	return c.httpStatus
+}
+
+func (c *JsonApiClientResponder) setHttpMessage(message string) {
+	c.httpMessage = message
+}
+
+func (c *JsonApiClientResponder) StatusMessage() string {
+	return c.httpMessage
 }
 
 // This type can be use for wrapper html error, because external system is being load balanced with

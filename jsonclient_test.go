@@ -19,6 +19,7 @@ func TestHttpClient_ConnectWith(t *testing.T) {
 			}{
 				"Test Name", "test@example.com",
 			}
+			w.WriteHeader(http.StatusOK)
 			w.Header().Set("Content-Type", "application/json")
 			b, _ := json.Marshal(data)
 			w.Write(b)
@@ -34,7 +35,7 @@ func TestHttpClient_ConnectWith(t *testing.T) {
 		}{}
 		jsonReq.BodyRequest(http.MethodGet, ts.URL, nil).AddHeader("Content-Type", "application/json")
 		hclient := NewJsonapiClient(4)
-		err := hclient.ConnectWith(jsonReq, &data)
+		responder, err := hclient.ConnectWith(jsonReq, &data)
 
 		if err != nil {
 			t.Fatalf("%s expected error nil, got %s", failed, err.Error())
@@ -45,6 +46,9 @@ func TestHttpClient_ConnectWith(t *testing.T) {
 		} else {
 			t.Logf("%s value %+v", success, data)
 		}
+
+		t.Logf("%s Response code: %d", success, responder.StatusCode())
+		t.Logf("%s Response message: %s", success, responder.StatusMessage())
 	}
 
 	t.Log("Testing ConnectWith, testing timeout")
@@ -58,7 +62,7 @@ func TestHttpClient_ConnectWith(t *testing.T) {
 		jsonReq.BodyRequest(http.MethodGet, "http://www.foodboook.com/", nil).AddHeader("Content-Type", "application/json")
 		hclient := NewJsonapiClient(3)
 		now := time.Now()
-		err := hclient.ConnectWith(jsonReq, &data)
+		_, err := hclient.ConnectWith(jsonReq, &data)
 		idata := time.Since(now)
 		if err != nil {
 			t.Logf("%s expected error not nil", success)
@@ -90,7 +94,7 @@ func TestHttpClient_ConnectWith(t *testing.T) {
 			Email string `json:"email"`
 		}{}
 		jsonReq.BodyRequest(http.MethodGet, ts.URL, nil).AddHeader("Content-Type", "application/json")
-		err := hclient.ConnectWith(jsonReq, &data)
+		_, err := hclient.ConnectWith(jsonReq, &data)
 		if err != nil {
 			t.Logf("%s expected error not nil, err: %s", success, err.Error())
 		}
@@ -116,7 +120,7 @@ func TestHttpClient_ConnectWith(t *testing.T) {
 		}{}
 		jsonReq.BodyRequest(http.MethodGet, ts.URL, nil).AddHeader("Content-Type", "application/json")
 		hclient := NewJsonapiClient(2)
-		err := hclient.ConnectWith(jsonReq, &data)
+		_, err := hclient.ConnectWith(jsonReq, &data)
 
 		if err != nil {
 			t.Fatalf("%s expected error nil, got %s", failed, err.Error())
